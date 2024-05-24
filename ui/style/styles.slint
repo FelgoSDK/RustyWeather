@@ -1,0 +1,28 @@
+import { Palette } from "std-widgets.slint";
+
+import "../assets/weathericons-font.ttf";
+import "../assets/font-awesome.ttf";
+
+export global AppPalette {
+    out property<brush> background: #1673b4;
+    out property<brush> alternate-background: #2296bc;
+    out property<brush> foreground: white;
+
+    out property<brush> sun-yellow: Colors.yellow;
+    out property<brush> snow-white: Colors.cornsilk;
+    out property<brush> rain-blue: #7DCDFF.brighter(15%);
+
+    out property<brush> error-red: Colors.red.darker(20%);
+}
+
+export global AppFonts {
+    out property<length> default-font-size: 10pt;
+
+    out property<string> icons-font-name: "FontAwesome";
+    out property<string> weather-icons-font-name: "Weather Icons";
+}
+
+export global Images {
+    out property <image> busy-indicator: @image-url("../assets/busy-indicator.png");
+    out property <image> slint-logo: @image-url("../assets/slint-logo.svg");
+}
