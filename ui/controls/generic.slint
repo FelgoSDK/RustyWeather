@@ -1,0 +1,135 @@
+import { AppPalette, AppFonts } from "../style/styles.slint";
+
+export component AppText inherits Text {
+    color: AppPalette.foreground;
+
+    overflow: elide;
+}
+
+export component IconText inherits AppText {
+    font-family: AppFonts.icons-font-name;
+
+    horizontal-alignment: center;
+    vertical-alignment: center;
+}
+
+export component FloatingTextButton inherits Rectangle {
+    in property<string> text <=> text-item.text;
+    in property<brush> text-color <=> text-item.color;
+    in property<length> font-size <=> text-item.font-size;
+    in property<int> font-weight <=> text-item.font-weight;
+
+    callback clicked;
+
+    property<length> size: Math.max(text-item.preferred-width + self.padding-left + self.padding-right,
+                                    text-item.preferred-height + self.padding-top + self.padding-bottom);
+
+    drop-shadow-color: self.background.darker(50%);
+    drop-shadow-blur: 5px;
+    drop-shadow-offset-x: 3px;
+    drop-shadow-offset-y: 2px;
+
+    background: AppPalette.background;
+    border-radius: self.size / 2;
+
+    padding: 15px;
+    padding-left: self.padding;
+    padding-right: self.padding;
+    padding-top: self.padding;
+    padding-bottom: self.padding;
+
+    preferred-width: self.size;
+    preferred-height: self.size;
+
+    width: self.preferred-width;
+    height: self.preferred-height;
+
+    text-item := IconText {
+       horizontal-alignment: center;
+       vertical-alignment: center;
+    }
+
+    TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+export component SlideButton inherits Rectangle {
+    in-out property<string> text <=> text.text;
+    in-out property<bool> enabled <=> touch-area.enabled;
+    in property<color> background-color;
+    callback clicked <=> touch-area.clicked;
+
+    background: touch-area.pressed ? self.background-color.darker(10%) : self.background-color;
+    opacity: root.enabled ? 1.0 : 0.5;
+
+    text := IconText {
+        font-size: 2rem;
+
+        color: touch-area.pressed ? AppPalette.foreground.darker(10%) : AppPalette.foreground;
+    }
+
+    touch-area := TouchArea {}
+}
+
+export component TextField inherits Rectangle {
+    in property<string> icon-text;
+    in property<string> placeholder-text;
+    in-out property<string> text <=> text-input.text;
+    callback edited <=> text-input.edited;
+
+    forward-focus: text-input;
+
+    padding: 5px;
+    padding-top: self.padding;
+    padding-right: self.padding;
+    padding-bottom: self.padding;
+    padding-left: self.padding;
+
+    preferred-height: text-input.preferred-height + self.padding-top + self.padding-bottom;
+    height: self.preferred-height;
+
+    border-radius: 5px;
+    background: white.with-alpha(15%);
+
+    HorizontalLayout {
+        x: root.padding-left;
+        width: parent.width - root.padding-left - root.padding-right;
+
+        y: root.padding-top;
+        height: parent.height - root.padding-top - root.padding-bottom;
+
+        spacing: 10px;
+
+        IconText {
+            text: root.icon-text;
+            font-size: text-input.font-size;
+        }
+
+        AppText {
+            horizontal-stretch: 1;
+
+            horizontal-alignment: left;
+            font-size: text-input.font-size;
+            text: text-input.text == "" ? root.placeholder-text : "";
+
+            text-input := TextInput {
+                color: AppPalette.foreground;
+                font-size: 1.2rem;
+            }
+        }
+
+        IconText {
+            text: "\u{f00d}";
+
+            font-size: text-input.font-size;
+            visible: text-input.text != "";
+
+            TouchArea {
+                clicked => {
+                    text-input.text = "";
+                }
+            }
+        }
+    }
+}

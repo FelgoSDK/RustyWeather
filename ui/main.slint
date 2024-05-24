@@ -1,0 +1,179 @@
+import { Palette } from "std-widgets.slint";
+import { WindowInfo, WindowInfoHelper } from "./ui_utils.slint";
+import { StackView, StackPage } from "./controls/stackview.slint";
+import { CityListView } from "./city_weather.slint";
+import { CityWeather } from "./weather_datatypes.slint";
+import { LocationSearchView } from "./location_search.slint";
+import { GeoLocation } from "./location_datatypes.slint";
+import { AppPalette, AppFonts } from "./style/styles.slint";
+import { FloatingTextButton } from "./controls/generic.slint";
+import { BusyLayerController, BusyLayer } from "./controls/busy-layer.slint";
+
+// Re export for native rust
+export { WindowInfo, AppPalette, BusyLayerController, CityWeather, GeoLocation }
+
+component EdgeFloatingTextButton inherits FloatingTextButton {
+    out property<length> edge-spacing: 15px;
+
+    padding: 10px;
+    font-size: 2rem;
+}
+
+component AnimatedStackPage inherits StackPage {
+    // is-active and is-opened are not set as a binding here, only when the value is actually changed.
+    // This is to avoid redundant reevaluation of dependent properties and conditional elements.
+    // see: https://github.com/slint-ui/slint/issues/5209
+    out property<bool> is-active: false;
+    out property<bool> is-opened: false;
+
+    // using a helper int property to be able to use animate
+    property<int> is-active-value: 0;
+
+    property<duration> animation-duration: 250ms;
+
+    visible: root.is-active;
+
+    init => { root.is-active = (self.is-active_value == 1); }
+    changed is-active-value => { root.is-active = (self.is-active_value == 1); }
+
+    states [
+        active when self.is-current: {
+            is-active-value: 1;
+
+            out {
+                animate is-active-value { delay: root.animation-duration; }
+            }
+        }
+    ]
+
+    content := Rectangle {
+        changed y => {
+            // First open animation is not working properly without the line below. (A bug?)
+            // Seems the animation in transition is using old values,
+            // and accessing the property somehow forces the update.
+            self.y;
+
+            if (root.is-opened != (self.y == 0)) {
+                root.is-opened = (self.y == 0);
+            }
+        }
+
+        y: root.is-current ? 0px : root.height;
+
+        animate y { duration: root.animation-duration; easing: ease-in-out-quad; }
+
+        @children
+    }
+}
+
+export component AppWindow inherits Window {
+    callback refresh-all();
+
+    background: AppPalette.background;
+    default-font-size: AppFonts.default-font-size;
+
+    preferred-width: 400px;
+    preferred-height: 700px;
+
+    WindowInfoHelper {
+        init => {
+            // no support for the different modes currently
+            // this is to display slint badge in proper colors
+            Palette.color-scheme = ColorScheme.dark;
+        }
+    }
+
+    Rectangle {
+        background: @linear-gradient(180deg, AppPalette.background 0%, AppPalette.background-alternative 100%);
+    }
+
+    // this component is added to overcome a slint issue with android cursor never being hidden
+    // see: https://github.com/slint-ui/slint/issues/5233
+    invisible-input := TextInput {
+        y: -self.height * 2;
+    }
+
+    stack := StackView {
+        current-index: 0;
+        min-index: 0;
+
+        StackPage {
+            is-current: self.check-is-current(stack.current-index);
+            init => { self.page-index = stack.insert-page(); }
+            visible: self.page-index <= stack.current-index;
+
+            CityListView {}
+
+            EdgeFloatingTextButton {
+                x: parent.width - self.width - self.edge-spacing;
+                y: parent.height - self.height - self.edge-spacing;
+
+                text: "\u{f01e}";
+
+                clicked => {
+                    BusyLayerController.set-busy();
+                    root.refresh-all();
+                }
+            }
+
+            EdgeFloatingTextButton {
+                x: self.edge-spacing;
+                y: parent.height - self.height - self.edge-spacing;
+
+                text: "\u{f067}";
+
+                clicked => {
+                    stack.push();
+                }
+            }
+        }
+
+        AnimatedStackPage {
+            is-current: self.check-is-current(stack.current-index);
+            init => { self.page-index = stack.insert-page(); }
+
+            changed is-active => {
+                if (!self.is-active) {
+                    // focusing invisible input so the cursor is drawn out of the window scope
+                    invisible-input.focus();
+                    // clearing focus right after to hide the keyboard
+                    invisible-input.clear-focus();
+                }
+            }
+
+            location-search-view := LocationSearchView {
+                property<bool> is-active: parent.is-active;
+                property<bool> is-opened: parent.is-opened;
+
+                changed is-active => {
+                    if (self.is-active) {
+                        self.clear();
+                    }
+                }
+
+                changed is-opened => {
+                    if (self.is-opened) {
+                        // we cannot focus on init, because android cursor is then wrongly positioned
+                        self.focus();
+                    }
+                }
+
+                close-request => {
+                    self.clear-focus();
+                    stack.pop();
+                }
+
+                EdgeFloatingTextButton {
+                    x: parent.width - self.width - self.edge-spacing;
+                    y: parent.height - self.height - self.edge-spacing;
+
+                    text: "\u{f00d}";
+
+                    clicked => { location-search-view.close-request(); }
+                }
+            }
+        }
+    }
+
+    if BusyLayerController.is-busy: BusyLayer {}
+}
