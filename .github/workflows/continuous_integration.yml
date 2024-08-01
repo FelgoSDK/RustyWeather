@@ -1,0 +1,25 @@
+# from: https://plippe.github.io/blog/2021/07/12/rust-wasm-github.html
+name: Continuous integration
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - run: cargo test --all
+
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - run: cargo fmt --all -- --check
+
+  clippy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - run: cargo clippy --all -- -D warnings

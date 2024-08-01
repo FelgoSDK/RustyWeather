@@ -1,0 +1,31 @@
+# based on: https://plippe.github.io/blog/2021/07/12/rust-wasm-github.html
+name: Continuous deployment
+on:
+  workflow_run:
+    branches: [main]
+    workflows: [Continuous integration]
+    types: [completed]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+
+      - uses: jetli/wasm-pack-action@v0.4.0
+      - uses: jetli/wasm-bindgen-action@v0.2.0
+
+      - uses: actions/checkout@v4
+
+      - run: wasm-pack build --target web --release
+      - run: mkdir ./wasm/pkg && cp ./pkg/rusty_weather_lib.js ./pkg/rusty_weather_lib_bg.wasm ./wasm/pkg
+
+      - uses: s0/git-publish-subdir-action@develop
+        env:
+          REPO: self
+          BRANCH: gh-pages
+          FOLDER: ./wasm
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
