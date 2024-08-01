@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            #button-box {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin: 0px auto;
+            }
+            #content {
+                display: flex;
+                justify-content: center;
+                margin: 20px auto;
+            }
+            #loading {
+                margin-top: 20px;
+                text-align: center;
+            }
+            #canvas {
+                position: absolute;
+                width: 900px !important;
+                height: 600px !important;
+                border: 3px solid #ffffff;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="button-box">
+            <button onclick="setLandscape()">Landscape</button>
+            <button onclick="setPortrait()">Portrait</button>
+        </div>
+        <script>
+            function setLandscape() {
+                const canvas = document.getElementById('canvas');
+                canvas.style.setProperty('width', '900px', 'important');
+                canvas.style.setProperty('height', '600px', 'important');
+            }
+
+            function setPortrait() {
+                const canvas = document.getElementById('canvas');
+                canvas.style.setProperty('width', '400px', 'important');
+                canvas.style.setProperty('height', '700px', 'important');
+            }
+        </script>
+
+        <div id="content" >
+            <div id="loading">Loading...</div>
+
+            <!-- canvas required by the Slint runtime -->
+            <canvas id="canvas" unselectable="on"></canvas>
+            <script type="module">
+                // import the generated file.
+                import init from "./pkg/rusty_weather_lib.js";
+                init();
+            </script>
+        </div>
+    </body>
+</html>
